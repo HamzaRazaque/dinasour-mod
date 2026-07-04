@@ -15,7 +15,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up Java / JDK environment
+      # Step 2: Set up Java / JDK environment with automated caching
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -23,20 +23,19 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      # Step 3: Set up standalone Gradle on the runner
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+      # Step 3: Grant execution rights to the wrapper in the root directory
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-      # Step 4: Run gradle build inside the specific subfolder
+      # Step 4: Run the compile task pointing to the nested project directory
       - name: Build with Gradle
-        run: gradle build
-        working-directory: ./PUT_YOUR_FOLDER_NAME_HERE
+        run: ./gradlew build
+        working-directory: ./hamblade-mod-fabric-1.21.1/hamblade-mod
 
-      # Step 5: Upload the generated mod jar file from the subfolder
+      # Step 5: Archive the compiled output jar file from the nested build directory
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: built-artifacts
-          path: ./PUT_YOUR_FOLDER_NAME_HERE/build/libs/
+          path: ./hamblade-mod-fabric-1.21.1/hamblade-mod/build/libs/
           retention-days: 5
-          
