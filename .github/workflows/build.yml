@@ -2,7 +2,7 @@ name: Gradle Build Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, dev ]
   pull_request:
     branches: [ main, master ]
 
@@ -23,20 +23,20 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      # Step 3: Grant execution rights to the wrapper inside your subfolder
+      # Step 3: Grant execution rights to the wrapper inside the mod folder
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-        working-directory: ./YOUR_SUBFOLDER_NAME
+        working-directory: ./dinasour-mod
 
-      # Step 4: Run the compile task inside your subfolder
+      # Step 4: Run the compile task inside the mod folder
       - name: Build with Gradle
         run: ./gradlew build
-        working-directory: ./YOUR_SUBFOLDER_NAME
+        working-directory: ./dinasour-mod
 
-      # Step 5: Archive the compiled output from the subfolder path
+      # Step 5: Archive the compiled output from the mod folder path
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: built-artifacts
-          path: ./YOUR_SUBFOLDER_NAME/build/libs/
+          path: ./dinasour-mod/build/libs/
           retention-days: 5
