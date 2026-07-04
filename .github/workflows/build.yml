@@ -1,4 +1,4 @@
-name: Gradle Build Pipeline (No Wrapper)
+name: Gradle Build Pipeline
 
 on:
   push:
@@ -27,14 +27,16 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # Step 4: Run the build task using system gradle (no wrapper needed)
+      # Step 4: Run gradle build inside the specific subfolder
       - name: Build with Gradle
         run: gradle build
+        working-directory: ./PUT_YOUR_FOLDER_NAME_HERE
 
-      # Step 5: Upload the generated mod jar file
+      # Step 5: Upload the generated mod jar file from the subfolder
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: built-artifacts
-          path: build/libs/
+          path: ./PUT_YOUR_FOLDER_NAME_HERE/build/libs/
           retention-days: 5
+          
