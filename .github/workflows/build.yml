@@ -15,31 +15,29 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up the environment (Example using Node, change as needed)
+      # Step 2: Set up Node.js using Node 24 (avoids deprecation)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '24'
 
-      # Step 3: Install dependencies and build
+      # Step 3: Install dependencies and build (works without a lockfile)
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run Build
         run: npm run build --if-present
 
-      # Step 4: Upload the artifact using the updated v4 action
+      # Step 4: Upload the artifact using v4
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: production-build-artifacts  # Must be unique per workflow run
+          name: production-build-artifacts
           path: |
             dist/
             build/
-          retention-days: 5                 # Optional: automatically deletes after 5 days
+          retention-days: 5
 
-  # Optional second job to demonstrate downloading the artifact safely with v4
   deploy:
     needs: build-and-test
     runs-on: ubuntu-latest
@@ -47,12 +45,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 5: Download the artifact using the matching v4 action
+      # Step 5: Download the artifact using matching v4
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: production-build-artifacts  # Must exactly match the upload name
+          name: production-build-artifacts
           path: downloaded-artifacts/
 
       - name: Verify Files
         run: ls -R downloaded-artifacts/
+        
