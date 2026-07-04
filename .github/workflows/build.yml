@@ -23,19 +23,21 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      # Step 3: Grant execution rights to the wrapper in the root directory
+      # Step 3: Grant execution rights to the wrapper inside the correct folder
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+        working-directory: ./dinomod-fabric-1.21.1/dinomod
 
-      # Step 4: Run the compile task pointing to the nested project directory
+      # Step 4: Run the compile task inside the correct folder
       - name: Build with Gradle
         run: ./gradlew build
-        working-directory: ./hamblade-mod-fabric-1.21.1/hamblade-mod
+        working-directory: ./dinomod-fabric-1.21.1/dinomod
 
-      # Step 5: Archive the compiled output jar file from the nested build directory
+      # Step 5: Archive the compiled output jar file from the correct build directory
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: built-artifacts
-          path: ./hamblade-mod-fabric-1.21.1/hamblade-mod/build/libs/
+          path: ./dinomod-fabric-1.21.1/dinomod/build/libs/
           retention-days: 5
+          
