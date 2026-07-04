@@ -15,8 +15,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up Java / JDK environment
-      # Uses the latest v4 action and enables automatic caching for Gradle dependencies
+      # Step 2: Set up Java / JDK environment with automated caching
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -24,21 +23,20 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      # Step 3: Grant execute permission to the Gradle wrapper script
-      # This ensures Linux runners can run the script without permission errors
+      # Step 3: Grant execution rights to the wrapper inside your subfolder
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+        working-directory: ./YOUR_SUBFOLDER_NAME
 
-      # Step 4: Run the Gradle build task
+      # Step 4: Run the compile task inside your subfolder
       - name: Build with Gradle
         run: ./gradlew build
+        working-directory: ./YOUR_SUBFOLDER_NAME
 
-      # Step 5: Upload the generated build artifacts (e.g., .jar files)
-      # Uses the modern v4 upload utility
+      # Step 5: Archive the compiled output from the subfolder path
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: built-artifacts
-          path: build/libs/
+          path: ./YOUR_SUBFOLDER_NAME/build/libs/
           retention-days: 5
-          
