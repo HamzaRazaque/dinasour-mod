@@ -15,7 +15,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up Java / JDK environment
+      # Step 2: Set up Java / JDK environment (JDK 21 is great for 1.21.1)
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -23,11 +23,13 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      # Step 3: Install standalone Gradle on the runner
-      - name: Setup Gradle
+      # Step 3: Force the runner to install Gradle 8.8 to support Fabric Loom 1.7
+      - name: Setup Gradle 8.8
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
 
-      # Step 4: Run standard gradle build inside the subfolder (skips gradlew)
+      # Step 4: Run standard gradle build inside your subfolder
       - name: Build with Gradle
         run: gradle build
         working-directory: ./dinomod-fabric-1.21.1/dinomod
