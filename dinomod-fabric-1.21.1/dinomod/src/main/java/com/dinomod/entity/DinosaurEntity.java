@@ -35,15 +35,14 @@ public class DinosaurEntity extends TameableEntity {
     private static final TrackedData<Integer> GROWTH =
         DataTracker.registerData(DinosaurEntity.class, TrackedDataHandlerRegistry.INTEGER);
 
-    // Baby starts at scale 0.2 (2 blocks), grows to 1.0 (10-15 blocks)
     private static final int MAX_GROWTH = 5;
-    private static final float BABY_START_SCALE = 0.2f;
-    private static final float ADULT_SCALE = 1.3f;
+    // Baby = 2-3 blocks, Adult = 10-15 blocks (scale multiplier on top of hitbox)
+    private static final float BABY_SCALE = 0.4f;
+    private static final float ADULT_SCALE = 2.2f;
 
     private int danceTickTimer = 0;
-    private float currentScale = BABY_START_SCALE;
-    private float targetScale = BABY_START_SCALE;
-    private int growthAnimTimer = 0;
+    private float currentScale = BABY_SCALE;
+    private float targetScale = BABY_SCALE;
 
     public DinosaurEntity(EntityType<? extends TameableEntity> entityType, World world) {
         super(entityType, world);
@@ -51,11 +50,11 @@ public class DinosaurEntity extends TameableEntity {
 
     public static DefaultAttributeContainer.Builder createDinosaurAttributes() {
         return MobEntity.createMobAttributes()
-            .add(EntityAttributes.GENERIC_MAX_HEALTH, 60.0)
-            .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.32)
-            .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 10.0)
-            .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 20.0)
-            .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.5);
+            .add(EntityAttributes.GENERIC_MAX_HEALTH, 100.0)
+            .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.35)
+            .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 15.0)
+            .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 24.0)
+            .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.8);
     }
 
     @SuppressWarnings("unchecked")
@@ -82,8 +81,7 @@ public class DinosaurEntity extends TameableEntity {
     public void setGrowth(int growth) { this.dataTracker.set(GROWTH, growth); }
 
     public float getCurrentScale() {
-        if (!isBaby()) return ADULT_SCALE;
-        return currentScale;
+        return isBaby() ? currentScale : ADULT_SCALE;
     }
 
     @Override
@@ -100,7 +98,9 @@ public class DinosaurEntity extends TameableEntity {
         this.targetSelector.add(2, new ActiveTargetGoal<>(this, PlayerEntity.class, true) {
             @Override
             public boolean canStart() {
-                return !DinosaurEntity.this.isTamed() && !DinosaurEntity.this.isBaby() && super.canStart();
+                return !DinosaurEntity.this.isTamed()
+                    && !DinosaurEntity.this.isBaby()
+                    && super.canStart();
             }
         });
     }
@@ -110,8 +110,7 @@ public class DinosaurEntity extends TameableEntity {
         ItemStack heldItem = player.getStackInHand(hand);
 
         if (heldItem.isOf(ModItems.MOMOTARO_DANGO)) {
-
-            // Taming wild adult
+            // Tame wild adult
             if (!this.isTamed() && !this.isBaby()) {
                 if (!this.getWorld().isClient()) {
                     if (!player.getAbilities().creativeMode) heldItem.decrement(1);
@@ -130,7 +129,7 @@ public class DinosaurEntity extends TameableEntity {
                 return ActionResult.SUCCESS;
             }
 
-            // Growing baby
+            // Grow baby
             if (this.isBaby() && this.isTamed()) {
                 if (!this.getWorld().isClient()) {
                     if (!player.getAbilities().creativeMode) heldItem.decrement(1);
@@ -138,47 +137,44 @@ public class DinosaurEntity extends TameableEntity {
                     this.setGrowth(newGrowth);
                     spawnTameParticles(true);
 
-                    // Trigger smooth growth animation
                     float progress = (float) newGrowth / MAX_GROWTH;
-                    targetScale = BABY_START_SCALE + (progress * (ADULT_SCALE - BABY_START_SCALE));
-                    growthAnimTimer = 60; // animate over 3 seconds
+                    targetScale = BABY_SCALE + (progress * (ADULT_SCALE - BABY_SCALE));
 
                     int remaining = MAX_GROWTH - newGrowth;
                     if (remaining > 0) {
                         player.sendMessage(
-                            Text.literal("§e🍡 Growing! §6" + remaining + " more §edango to fully grow!"),
+                            Text.literal("§e🍡 Growing! §6" + remaining + " more §edango!"),
                             true
                         );
-                    }
-
-                    if (newGrowth >= MAX_GROWTH) {
+                    } else {
                         this.setBaby(false);
                         this.setGrowth(0);
                         this.setHealth(this.getMaxHealth());
                         targetScale = ADULT_SCALE;
+                        currentScale = ADULT_SCALE;
                         for (int i = 0; i < 25; i++) {
-                            double dx = this.getRandom().nextGaussian() * 0.15;
-                            double dy = this.getRandom().nextGaussian() * 0.15;
-                            double dz = this.getRandom().nextGaussian() * 0.15;
+                            double dx = this.getRandom().nextGaussian() * 0.2;
+                            double dy = this.getRandom().nextGaussian() * 0.2;
+                            double dz = this.getRandom().nextGaussian() * 0.2;
                             this.getWorld().addParticle(ParticleTypes.HAPPY_VILLAGER,
-                                this.getX(), this.getY() + 1, this.getZ(), dx, dy, dz);
+                                this.getX(), this.getY() + 2, this.getZ(), dx, dy, dz);
                         }
-                        player.sendMessage(Text.literal("§a🦕 Your dinosaur is now fully grown!"), true);
+                        player.sendMessage(Text.literal("§a🦕 Your dinosaur is now a giant adult!"), true);
                     }
                 }
                 return ActionResult.SUCCESS;
             }
         }
 
-        // Owner controls — ride or sit
+        // Owner: ride or sit
         if (this.isTamed() && !this.isBaby() && player.getUuid().equals(this.getOwnerUuid())) {
             if (!this.getWorld().isClient()) {
                 if (player.isSneaking()) {
                     this.setSitting(!this.isSitting());
                     player.sendMessage(
                         this.isSitting()
-                            ? Text.literal("§eDinosaur is sitting.")
-                            : Text.literal("§eDinosaur is standing."),
+                            ? Text.literal("§eSitting.")
+                            : Text.literal("§eStanding."),
                         true
                     );
                 } else {
@@ -191,6 +187,8 @@ public class DinosaurEntity extends TameableEntity {
 
         return super.interactMob(player, hand);
     }
+
+    // ── Riding ───────────────────────────────────────────────────────────────
 
     @Override
     public LivingEntity getControllingPassenger() {
@@ -206,12 +204,12 @@ public class DinosaurEntity extends TameableEntity {
         return this.getControllingPassenger() != null;
     }
 
-    // Fixed WASD riding movement
     @Override
     public void travel(Vec3d movementInput) {
         LivingEntity passenger = this.getControllingPassenger();
-        if (this.hasPassengers() && passenger instanceof PlayerEntity rider) {
-            // Face the direction the rider is looking
+
+        if (this.isLogicalSideForUpdatingMovement() && passenger instanceof PlayerEntity rider) {
+            // Match dino rotation to rider
             this.setYaw(rider.getYaw());
             this.prevYaw = this.getYaw();
             this.setPitch(rider.getPitch() * 0.5f);
@@ -219,44 +217,31 @@ public class DinosaurEntity extends TameableEntity {
             this.setBodyYaw(this.getYaw());
             this.setHeadYaw(this.getYaw());
 
-            // Get rider input
-            float sideways = rider.sidewaysSpeed;
             float forward = rider.forwardSpeed;
+            float strafe = rider.sidewaysSpeed;
+            if (forward < 0f) forward *= 0.5f;
 
-            if (forward <= 0.0f) {
-                forward *= 0.5f; // slower backwards
-            }
-
-            // Apply speed
-            this.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED)
-                .setBaseValue(0.32);
-
-            super.travel(new Vec3d(sideways * 0.5f, movementInput.y, forward));
+            this.setMovementSpeed(0.35f);
+            super.travel(new Vec3d(strafe, movementInput.y, forward));
         } else {
             super.travel(movementInput);
         }
     }
 
-    public void setDancing(boolean dancing) {
-        this.dataTracker.set(DANCING, dancing);
-        if (dancing) danceTickTimer = 0;
+    @Override
+    public boolean isPushable() {
+        return !this.hasPassengers();
     }
 
-    public boolean isDancing() {
-        return this.dataTracker.get(DANCING);
-    }
+    // ── Scale / growth ───────────────────────────────────────────────────────
 
     @Override
     public void tick() {
         super.tick();
 
-        // Smooth growth animation
-        if (growthAnimTimer > 0 && this.getWorld().isClient()) {
-            growthAnimTimer--;
-            float speed = 0.05f;
-            if (currentScale < targetScale) {
-                currentScale = Math.min(currentScale + speed, targetScale);
-            }
+        // Smooth scale growth on client
+        if (this.getWorld().isClient() && isBaby() && currentScale < targetScale) {
+            currentScale = Math.min(currentScale + 0.02f, targetScale);
         }
 
         if (isDancing()) {
@@ -272,12 +257,22 @@ public class DinosaurEntity extends TameableEntity {
         }
     }
 
+    public void setDancing(boolean dancing) {
+        this.dataTracker.set(DANCING, dancing);
+        if (dancing) danceTickTimer = 0;
+    }
+
+    public boolean isDancing() {
+        return this.dataTracker.get(DANCING);
+    }
+
     @Override
     public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);
         nbt.putBoolean("IsBaby", this.isBaby());
         nbt.putInt("Growth", this.getGrowth());
         nbt.putFloat("CurrentScale", this.currentScale);
+        nbt.putFloat("TargetScale", this.targetScale);
     }
 
     @Override
@@ -285,8 +280,8 @@ public class DinosaurEntity extends TameableEntity {
         super.readCustomDataFromNbt(nbt);
         this.setBaby(nbt.getBoolean("IsBaby"));
         this.setGrowth(nbt.getInt("Growth"));
-        this.currentScale = nbt.contains("CurrentScale") ? nbt.getFloat("CurrentScale") : BABY_START_SCALE;
-        this.targetScale = this.currentScale;
+        this.currentScale = nbt.contains("CurrentScale") ? nbt.getFloat("CurrentScale") : BABY_SCALE;
+        this.targetScale = nbt.contains("TargetScale") ? nbt.getFloat("TargetScale") : BABY_SCALE;
     }
 
     @Override
