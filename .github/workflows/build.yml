@@ -1,43 +1,29 @@
-name: Gradle Build Pipeline (No Wrapper)
+name: Build Dino Mod
 
 on:
   push:
-    branches: [ main, master, dev ]
-  pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      # Step 1: Check out the repository code
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
-      # Step 2: Set up Java / JDK environment (JDK 21 is great for 1.21.1)
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      - name: Set up Java 21
+        uses: actions/setup-java@v3
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'gradle'
 
-      # Step 3: Force the runner to install Gradle 8.8 to support Fabric Loom 1.7
-      - name: Setup Gradle 8.8
-        uses: gradle/actions/setup-gradle@v4
+      - name: Grant Gradle permission
+        run: chmod +x gradlew
+
+      - name: Build
+        run: ./gradlew build
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v3
         with:
-          gradle-version: '8.8'
-
-      # Step 4: Run standard gradle build inside your subfolder
-      - name: Build with Gradle
-        run: gradle build
-        working-directory: ./dinomod-fabric-1.21.1/dinomod
-
-      # Step 5: Archive the compiled output jar file
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: built-artifacts
-          path: ./dinomod-fabric-1.21.1/dinomod/build/libs/
-          retention-days: 5
+          name: dinomod-jar
+          path: build/libs/*.jar
