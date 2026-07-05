@@ -3,6 +3,7 @@ package com.dinomod.entity;
 import com.dinomod.registry.ModItems;
 import com.dinomod.registry.ModSounds;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -15,18 +16,27 @@ import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class DinosaurEntity extends TameableEntity {
 
     private static final TrackedData<Boolean> DANCING =
         DataTracker.registerData(DinosaurEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Boolean> BABY =
+        DataTracker.registerData(DinosaurEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Integer> GROWTH =
+        DataTracker.registerData(DinosaurEntity.class, TrackedDataHandlerRegistry.INTEGER);
+
+    // How many dangos needed to grow from baby to adult
+    private static final int MAX_GROWTH = 5;
 
     private int danceTickTimer = 0;
 
@@ -45,13 +55,34 @@ public class DinosaurEntity extends TameableEntity {
 
     @Override
     public PassiveEntity createChild(ServerWorld world, PassiveEntity entity) {
-        return null;
+        DinosaurEntity baby = new DinosaurEntity(getType(), world);
+        baby.setBaby(true);
+        baby.setGrowth(0);
+        return baby;
     }
 
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {
         super.initDataTracker(builder);
         builder.add(DANCING, false);
+        builder.add(BABY, false);
+        builder.add(GROWTH, 0);
+    }
+
+    public boolean isBaby() {
+        return this.dataTracker.get(BABY);
+    }
+
+    public void setBaby(boolean baby) {
+        this.dataTracker.set(BABY, baby);
+    }
+
+    public int getGrowth() {
+        return this.dataTracker.get(GROWTH);
+    }
+
+    public void setGrowth(int growth) {
+        this.dataTracker.set(GROWTH, growth);
     }
 
     @Override
@@ -68,7 +99,7 @@ public class DinosaurEntity extends TameableEntity {
         this.targetSelector.add(2, new ActiveTargetGoal<>(this, PlayerEntity.class, true) {
             @Override
             public boolean canStart() {
-                return !DinosaurEntity.this.isTamed() && super.canStart();
+                return !DinosaurEntity.this.isTamed() && !DinosaurEntity.this.isBaby() && super.canStart();
             }
         });
     }
@@ -77,34 +108,136 @@ public class DinosaurEntity extends TameableEntity {
     public ActionResult interactMob(PlayerEntity player, Hand hand) {
         ItemStack heldItem = player.getStackInHand(hand);
 
-        if (!this.isTamed() && heldItem.isOf(ModItems.MOMOTARO_DANGO)) {
-            if (!this.getWorld().isClient()) {
-                if (!player.getAbilities().creativeMode) {
-                    heldItem.decrement(1);
+        // Feed Momotaro Dango
+        if (heldItem.isOf(ModItems.MOMOTARO_DANGO)) {
+
+            // Taming wild adult dino
+            if (!this.isTamed() && !this.isBaby()) {
+                if (!this.getWorld().isClient()) {
+                    if (!player.getAbilities().creativeMode) heldItem.decrement(1);
+                    if (this.getRandom().nextInt(3) == 0) {
+                        this.setOwner(player);
+                        this.setSitting(false);
+                        this.setHealth(this.getMaxHealth());
+                        spawnTameParticles(true);
+                        this.getWorld().sendEntityStatus(this, (byte) 7);
+                        this.playSound(ModSounds.DINO_TAME, 1.0f, 1.0f);
+                        player.sendMessage(Text.literal("§aThe dinosaur has been tamed! 🦕❤"), true);
+                    } else {
+                        this.getWorld().sendEntityStatus(this, (byte) 6);
+                    }
                 }
-                if (this.getRandom().nextInt(3) == 0) {
-                    this.setOwner(player);
-                    this.setSitting(false);
-                    this.setHealth(this.getMaxHealth());
-                    spawnTameParticles(true);
-                    this.getWorld().sendEntityStatus(this, (byte) 7);
-                    this.playSound(ModSounds.DINO_TAME, 1.0f, 1.0f);
-                    player.sendMessage(Text.literal("§aThe dinosaur has been tamed! 🦕❤"), true);
-                } else {
-                    this.getWorld().sendEntityStatus(this, (byte) 6);
-                }
+                return ActionResult.SUCCESS;
             }
-            return ActionResult.SUCCESS;
+
+            // Growing a baby dino
+            if (this.isBaby() && this.isTamed()) {
+                if (!this.getWorld().isClient()) {
+                    if (!player.getAbilities().creativeMode) heldItem.decrement(1);
+
+                    int newGrowth = this.getGrowth() + 1;
+                    this.setGrowth(newGrowth);
+
+                    // Spawn heart particles while feeding
+                    spawnTameParticles(true);
+
+                    int remaining = MAX_GROWTH - newGrowth;
+                    if (remaining > 0) {
+                        player.sendMessage(
+                            Text.literal("§e🍡 Your baby dino is growing! Feed it §6" + remaining + " more §edango to make it an adult!"),
+                            true
+                        );
+                    }
+
+                    // Fully grown!
+                    if (newGrowth >= MAX_GROWTH) {
+                        this.setBaby(false);
+                        this.setGrowth(0);
+                        this.setHealth(this.getMaxHealth());
+
+                        // Big particle burst
+                        for (int i = 0; i < 20; i++) {
+                            double dx = this.getRandom().nextGaussian() * 0.1;
+                            double dy = this.getRandom().nextGaussian() * 0.1;
+                            double dz = this.getRandom().nextGaussian() * 0.1;
+                            this.getWorld().addParticle(ParticleTypes.HAPPY_VILLAGER,
+                                this.getX(), this.getY() + 1, this.getZ(), dx, dy, dz);
+                        }
+                        player.sendMessage(Text.literal("§a🦕 Your baby dinosaur has grown into a full adult!"), true);
+                    }
+                }
+                return ActionResult.SUCCESS;
+            }
         }
 
-        if (this.isTamed() && player.getUuid().equals(this.getOwnerUuid())) {
+        // Owner controls tamed adult
+        if (this.isTamed() && !this.isBaby() && player.getUuid().equals(this.getOwnerUuid())) {
             if (!this.getWorld().isClient()) {
-                this.setSitting(!this.isSitting());
+                if (player.isSneaking()) {
+                    this.setSitting(!this.isSitting());
+                    player.sendMessage(
+                        this.isSitting()
+                            ? Text.literal("§eDinosaur is sitting.")
+                            : Text.literal("§eDinosaur is standing."),
+                        true
+                    );
+                } else {
+                    this.setSitting(false);
+                    player.startRiding(this);
+                }
             }
             return ActionResult.SUCCESS;
         }
 
         return super.interactMob(player, hand);
+    }
+
+    @Override
+    public LivingEntity getControllingPassenger() {
+        if (this.getFirstPassenger() instanceof PlayerEntity player) {
+            if (this.isTamed() && player.getUuid().equals(this.getOwnerUuid())) {
+                return player;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public boolean canBeControlledByRider() {
+        return this.getControllingPassenger() != null;
+    }
+
+    @Override
+    public void travel(Vec3d movementInput) {
+        if (this.getControllingPassenger() instanceof PlayerEntity player) {
+            this.setYaw(player.getYaw());
+            this.setPitch(player.getPitch() * 0.5f);
+            this.setBodyYaw(this.getYaw());
+            this.setHeadYaw(this.getYaw());
+            float forward = player.forwardSpeed;
+            float strafe = player.sidewaysSpeed;
+            super.travel(new Vec3d(strafe, movementInput.y, forward));
+        } else {
+            super.travel(movementInput);
+        }
+    }
+
+    @Override
+    public void updatePassengerPosition(net.minecraft.entity.Entity passenger) {
+        if (this.hasPassenger(passenger)) {
+            passenger.setPosition(this.getX(), this.getY() + this.getHeight() * 0.9, this.getZ());
+        }
+    }
+
+    // Scale baby to be smaller
+    @Override
+    public float getScaleFactor() {
+        if (isBaby()) {
+            // Scale grows from 0.3 to 1.0 based on growth progress
+            float progress = (float) getGrowth() / MAX_GROWTH;
+            return 0.3f + (progress * 0.7f);
+        }
+        return 1.0f;
     }
 
     public void setDancing(boolean dancing) {
@@ -129,6 +262,20 @@ public class DinosaurEntity extends TameableEntity {
         if (!this.getWorld().isClient() && this.age % 1200 == 0 && !this.isTamed()) {
             this.playSound(ModSounds.BACKGROUND_MUSIC, 0.5f, 1.0f);
         }
+    }
+
+    @Override
+    public void writeCustomDataToNbt(NbtCompound nbt) {
+        super.writeCustomDataToNbt(nbt);
+        nbt.putBoolean("IsBaby", this.isBaby());
+        nbt.putInt("Growth", this.getGrowth());
+    }
+
+    @Override
+    public void readCustomDataFromNbt(NbtCompound nbt) {
+        super.readCustomDataFromNbt(nbt);
+        this.setBaby(nbt.getBoolean("IsBaby"));
+        this.setGrowth(nbt.getInt("Growth"));
     }
 
     @Override
