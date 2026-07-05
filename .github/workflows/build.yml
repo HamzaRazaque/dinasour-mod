@@ -17,13 +17,14 @@ jobs:
           distribution: 'temurin'
 
       - name: Grant Gradle permission
-        run: chmod +x gradlew
+        run: chmod +x dinomod-fabric-1.21.1/dinomod/gradlew
 
       - name: Build
+        working-directory: dinomod-fabric-1.21.1/dinomod
         run: ./gradlew build
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
           name: dinomod-jar
-          path: build/libs/*.jar
+          path: dinomod-fabric-1.21.1/dinomod/build/libs/*.jar
