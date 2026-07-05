@@ -7,7 +7,10 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.*;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
+import net.minecraft.world.event.GameEvent;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,20 +39,11 @@ public class ModItems {
                 .maxCount(16))
         );
 
-        // Green music disc
+        // Green music disc — simple item, dancing triggered by renderer
         DINO_MUSIC_DISC = Registry.register(
             Registries.ITEM,
             Identifier.of(DinoMod.MOD_ID, "dino_music_disc"),
-            new Item(new Item.Settings()
-                .maxCount(1)
-                .component(
-                    net.minecraft.component.DataComponentTypes.JUKEBOX_PLAYABLE,
-                    new net.minecraft.component.type.JukeboxPlayableComponent(
-                        net.minecraft.registry.entry.RegistryEntry.of(ModSounds.DINO_DISC_MUSIC),
-                        true
-                    )
-                )
-            )
+            new Item(new Item.Settings().maxCount(1))
         );
     }
 }
