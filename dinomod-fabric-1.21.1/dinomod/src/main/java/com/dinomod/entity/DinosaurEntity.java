@@ -35,9 +35,7 @@ public class DinosaurEntity extends TameableEntity {
     private static final TrackedData<Integer> GROWTH =
         DataTracker.registerData(DinosaurEntity.class, TrackedDataHandlerRegistry.INTEGER);
 
-    // How many dangos needed to grow from baby to adult
     private static final int MAX_GROWTH = 5;
-
     private int danceTickTimer = 0;
 
     public DinosaurEntity(EntityType<? extends TameableEntity> entityType, World world) {
@@ -53,9 +51,11 @@ public class DinosaurEntity extends TameableEntity {
             .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.3);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public PassiveEntity createChild(ServerWorld world, PassiveEntity entity) {
-        DinosaurEntity baby = new DinosaurEntity(getType(), world);
+        DinosaurEntity baby = new DinosaurEntity(
+            (EntityType<? extends TameableEntity>) this.getType(), world);
         baby.setBaby(true);
         baby.setGrowth(0);
         return baby;
@@ -108,10 +108,9 @@ public class DinosaurEntity extends TameableEntity {
     public ActionResult interactMob(PlayerEntity player, Hand hand) {
         ItemStack heldItem = player.getStackInHand(hand);
 
-        // Feed Momotaro Dango
         if (heldItem.isOf(ModItems.MOMOTARO_DANGO)) {
 
-            // Taming wild adult dino
+            // Taming wild adult
             if (!this.isTamed() && !this.isBaby()) {
                 if (!this.getWorld().isClient()) {
                     if (!player.getAbilities().creativeMode) heldItem.decrement(1);
@@ -130,32 +129,26 @@ public class DinosaurEntity extends TameableEntity {
                 return ActionResult.SUCCESS;
             }
 
-            // Growing a baby dino
+            // Growing baby
             if (this.isBaby() && this.isTamed()) {
                 if (!this.getWorld().isClient()) {
                     if (!player.getAbilities().creativeMode) heldItem.decrement(1);
-
                     int newGrowth = this.getGrowth() + 1;
                     this.setGrowth(newGrowth);
-
-                    // Spawn heart particles while feeding
                     spawnTameParticles(true);
 
                     int remaining = MAX_GROWTH - newGrowth;
                     if (remaining > 0) {
                         player.sendMessage(
-                            Text.literal("§e🍡 Your baby dino is growing! Feed it §6" + remaining + " more §edango to make it an adult!"),
+                            Text.literal("§e🍡 Growing! Feed §6" + remaining + " more §edango to make it an adult!"),
                             true
                         );
                     }
 
-                    // Fully grown!
                     if (newGrowth >= MAX_GROWTH) {
                         this.setBaby(false);
                         this.setGrowth(0);
                         this.setHealth(this.getMaxHealth());
-
-                        // Big particle burst
                         for (int i = 0; i < 20; i++) {
                             double dx = this.getRandom().nextGaussian() * 0.1;
                             double dy = this.getRandom().nextGaussian() * 0.1;
@@ -222,18 +215,8 @@ public class DinosaurEntity extends TameableEntity {
         }
     }
 
-    @Override
-    public void updatePassengerPosition(net.minecraft.entity.Entity passenger) {
-        if (this.hasPassenger(passenger)) {
-            passenger.setPosition(this.getX(), this.getY() + this.getHeight() * 0.9, this.getZ());
-        }
-    }
-
-    // Scale baby to be smaller
-    @Override
     public float getScaleFactor() {
         if (isBaby()) {
-            // Scale grows from 0.3 to 1.0 based on growth progress
             float progress = (float) getGrowth() / MAX_GROWTH;
             return 0.3f + (progress * 0.7f);
         }
