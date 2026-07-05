@@ -4,23 +4,25 @@ import com.dinomod.DinoMod;
 import com.dinomod.entity.DinosaurEntity;
 import com.dinomod.registry.ModItems;
 import com.dinomod.registry.ModSounds;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.JukeboxBlockEntity;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.entity.MobEntityRenderer;
-import net.minecraft.client.render.entity.feature.SaddleFeatureRenderer;
-import net.minecraft.util.Identifier;
-import net.minecraft.block.entity.JukeboxBlockEntity;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraft.block.Blocks;
 
 public class DinosaurRenderer extends MobEntityRenderer<DinosaurEntity, DinosaurModel<DinosaurEntity>> {
 
     private static final Identifier TEXTURE =
         Identifier.of(DinoMod.MOD_ID, "textures/entity/dinosaur.png");
-
     private static final Identifier TAMED_TEXTURE =
         Identifier.of(DinoMod.MOD_ID, "textures/entity/dinosaur_tamed.png");
+    private static final Identifier BABY_TEXTURE =
+        Identifier.of(DinoMod.MOD_ID, "textures/entity/dinosaur_baby.png");
 
     public DinosaurRenderer(EntityRendererFactory.Context context) {
         super(context, new DinosaurModel<>(
@@ -30,20 +32,25 @@ public class DinosaurRenderer extends MobEntityRenderer<DinosaurEntity, Dinosaur
 
     @Override
     public Identifier getTexture(DinosaurEntity entity) {
+        if (entity.isBaby()) return BABY_TEXTURE;
         return entity.isTamed() ? TAMED_TEXTURE : TEXTURE;
     }
 
     @Override
-    public void render(DinosaurEntity entity,
-                       float yaw, float tickDelta,
-                       net.minecraft.client.util.math.MatrixStack matrices,
-                       net.minecraft.client.render.VertexConsumerProvider vertexConsumers,
-                       int light) {
+    public void render(DinosaurEntity entity, float yaw, float tickDelta,
+                       MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light) {
 
-        // Check for nearby jukebox playing our disc
-        checkNearbyJukebox(entity);
-
-        super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light);
+        // Scale baby dino down visually
+        if (entity.isBaby()) {
+            float scale = entity.getScaleFactor();
+            matrices.push();
+            matrices.scale(scale, scale, scale);
+            super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light);
+            matrices.pop();
+        } else {
+            checkNearbyJukebox(entity);
+            super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light);
+        }
     }
 
     private void checkNearbyJukebox(DinosaurEntity entity) {
@@ -51,11 +58,9 @@ public class DinosaurRenderer extends MobEntityRenderer<DinosaurEntity, Dinosaur
         BlockPos entityPos = entity.getBlockPos();
         boolean jukeboxPlaying = false;
 
-        // Scan a 5-block radius for jukeboxes
         for (BlockPos pos : BlockPos.iterate(
             entityPos.add(-5, -3, -5),
             entityPos.add(5, 3, 5))) {
-
             if (world.getBlockState(pos).isOf(Blocks.JUKEBOX)) {
                 if (world.getBlockEntity(pos) instanceof JukeboxBlockEntity jukebox) {
                     ItemStack disc = jukebox.getStack(0);
@@ -69,9 +74,7 @@ public class DinosaurRenderer extends MobEntityRenderer<DinosaurEntity, Dinosaur
 
         if (jukeboxPlaying != entity.isDancing()) {
             entity.setDancing(jukeboxPlaying);
-            if (jukeboxPlaying) {
-                entity.playSound(ModSounds.DINO_DANCE, 1.0f, 1.0f);
-            }
+            if (jukeboxPlaying) entity.playSound(ModSounds.DINO_DANCE, 1.0f, 1.0f);
         }
     }
 }
