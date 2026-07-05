@@ -27,7 +27,7 @@ public class DinosaurRenderer extends MobEntityRenderer<DinosaurEntity, Dinosaur
     public DinosaurRenderer(EntityRendererFactory.Context context) {
         super(context, new DinosaurModel<>(
             DinosaurModel.getTexturedModelData().createModel()
-        ), 0.7f);
+        ), 1.2f);
     }
 
     @Override
@@ -40,17 +40,18 @@ public class DinosaurRenderer extends MobEntityRenderer<DinosaurEntity, Dinosaur
     public void render(DinosaurEntity entity, float yaw, float tickDelta,
                        MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light) {
 
-        // Scale baby dino down visually
-        if (entity.isBaby()) {
-            float scale = entity.getScaleFactor();
-            matrices.push();
-            matrices.scale(scale, scale, scale);
-            super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light);
-            matrices.pop();
-        } else {
+        // Scale the dino based on growth
+        float scale = entity.getCurrentScale();
+        matrices.push();
+        matrices.scale(scale, scale, scale);
+
+        // Check jukebox for dancing — only for tamed adult
+        if (!entity.isBaby()) {
             checkNearbyJukebox(entity);
-            super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light);
         }
+
+        super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light);
+        matrices.pop();
     }
 
     private void checkNearbyJukebox(DinosaurEntity entity) {
@@ -59,8 +60,8 @@ public class DinosaurRenderer extends MobEntityRenderer<DinosaurEntity, Dinosaur
         boolean jukeboxPlaying = false;
 
         for (BlockPos pos : BlockPos.iterate(
-            entityPos.add(-5, -3, -5),
-            entityPos.add(5, 3, 5))) {
+            entityPos.add(-8, -3, -8),
+            entityPos.add(8, 3, 8))) {
             if (world.getBlockState(pos).isOf(Blocks.JUKEBOX)) {
                 if (world.getBlockEntity(pos) instanceof JukeboxBlockEntity jukebox) {
                     ItemStack disc = jukebox.getStack(0);
@@ -74,7 +75,9 @@ public class DinosaurRenderer extends MobEntityRenderer<DinosaurEntity, Dinosaur
 
         if (jukeboxPlaying != entity.isDancing()) {
             entity.setDancing(jukeboxPlaying);
-            if (jukeboxPlaying) entity.playSound(ModSounds.DINO_DANCE, 1.0f, 1.0f);
+            if (jukeboxPlaying) {
+                entity.playSound(ModSounds.DINO_DANCE, 1.0f, 1.0f);
+            }
         }
     }
 }
