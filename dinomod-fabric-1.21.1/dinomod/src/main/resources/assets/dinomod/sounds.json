@@ -1,34 +1,10 @@
 {
-  "dino_ambient": {
-    "sounds": [{"name": "dinomod:dino_ambient", "stream": false}],
-    "subtitle": "subtitles.dinomod.dino_ambient"
-  },
-  "dino_hurt": {
-    "sounds": [{"name": "dinomod:dino_hurt"}],
-    "subtitle": "subtitles.dinomod.dino_hurt"
-  },
-  "dino_death": {
-    "sounds": [{"name": "dinomod:dino_death"}],
-    "subtitle": "subtitles.dinomod.dino_death"
-  },
-  "dino_attack": {
-    "sounds": [{"name": "dinomod:dino_attack"}],
-    "subtitle": "subtitles.dinomod.dino_attack"
-  },
-  "dino_tame": {
-    "sounds": [{"name": "dinomod:dino_tame"}],
-    "subtitle": "subtitles.dinomod.dino_tame"
-  },
-  "dino_dance": {
-    "sounds": [{"name": "dinomod:dino_dance", "stream": false}],
-    "subtitle": "subtitles.dinomod.dino_dance"
-  },
-  "dino_disc": {
-    "sounds": [{"name": "dinomod:dino_disc", "stream": true}],
-    "subtitle": "subtitles.dinomod.dino_disc"
-  },
-  "background_music": {
-    "sounds": [{"name": "dinomod:background_music", "stream": true}],
-    "subtitle": "subtitles.dinomod.background_music"
-  }
+  "dino_ambient":     { "sounds": [{"name": "dinomod:dino_ambient"}] },
+  "dino_hurt":        { "sounds": [{"name": "dinomod:dino_hurt"}] },
+  "dino_death":       { "sounds": [{"name": "dinomod:dino_death"}] },
+  "dino_attack":      { "sounds": [{"name": "dinomod:dino_attack"}] },
+  "dino_tame":        { "sounds": [{"name": "dinomod:dino_tame"}] },
+  "dino_dance":       { "sounds": [{"name": "dinomod:dino_dance"}] },
+  "dino_disc":        { "sounds": [{"name": "dinomod:dino_disc", "stream": true}], "subtitle": "Dino Dance" },
+  "background_music": { "sounds": [{"name": "dinomod:background_music", "stream": true}] }
 }
