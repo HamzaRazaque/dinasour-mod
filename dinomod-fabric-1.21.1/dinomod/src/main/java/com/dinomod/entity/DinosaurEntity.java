@@ -11,13 +11,13 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -43,6 +43,12 @@ public class DinosaurEntity extends TameableEntity {
             .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.3);
     }
 
+    // Required by TameableEntity
+    @Override
+    public PassiveEntity createChild(ServerWorld world, PassiveEntity entity) {
+        return null;
+    }
+
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {
         super.initDataTracker(builder);
@@ -59,7 +65,6 @@ public class DinosaurEntity extends TameableEntity {
         this.goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
         this.goalSelector.add(7, new LookAroundGoal(this));
 
-        // Only attack players when not tamed
         this.targetSelector.add(1, new TrackOwnerAttackerGoal(this));
         this.targetSelector.add(2, new ActiveTargetGoal<>(this, PlayerEntity.class, true) {
             @Override
@@ -73,34 +78,26 @@ public class DinosaurEntity extends TameableEntity {
     public ActionResult interactMob(PlayerEntity player, Hand hand) {
         ItemStack heldItem = player.getStackInHand(hand);
 
-        // Taming: offer Momotaro Dango to wild dino
         if (!this.isTamed() && heldItem.isOf(ModItems.MOMOTARO_DANGO)) {
             if (!this.getWorld().isClient()) {
                 if (!player.getAbilities().creativeMode) {
                     heldItem.decrement(1);
                 }
-
-                // 33% chance per dango to tame
                 if (this.getRandom().nextInt(3) == 0) {
                     this.setOwner(player);
                     this.setSitting(false);
                     this.setHealth(this.getMaxHealth());
-
-                    // Spawn heart particles
                     spawnTameParticles(true);
-
-                    this.getWorld().sendEntityStatus(this, (byte) 7); // hearts
+                    this.getWorld().sendEntityStatus(this, (byte) 7);
                     this.playSound(ModSounds.DINO_TAME, 1.0f, 1.0f);
                     player.sendMessage(Text.literal("§aThe dinosaur has been tamed! 🦕❤"), true);
                 } else {
-                    // Fail particles
-                    this.getWorld().sendEntityStatus(this, (byte) 6); // smoke
+                    this.getWorld().sendEntityStatus(this, (byte) 6);
                 }
             }
             return ActionResult.SUCCESS;
         }
 
-        // Toggle sit/stand for owner
         if (this.isTamed() && player.getUuid().equals(this.getOwnerUuid())) {
             if (!this.getWorld().isClient()) {
                 this.setSitting(!this.isSitting());
@@ -111,12 +108,9 @@ public class DinosaurEntity extends TameableEntity {
         return super.interactMob(player, hand);
     }
 
-    // Called by jukebox detection in client renderer
     public void setDancing(boolean dancing) {
         this.dataTracker.set(DANCING, dancing);
-        if (dancing) {
-            danceTickTimer = 0;
-        }
+        if (dancing) danceTickTimer = 0;
     }
 
     public boolean isDancing() {
@@ -126,8 +120,6 @@ public class DinosaurEntity extends TameableEntity {
     @Override
     public void tick() {
         super.tick();
-
-        // Dance timer: auto-stop after ~5 seconds if not refreshed
         if (isDancing()) {
             danceTickTimer++;
             if (danceTickTimer > 100) {
@@ -135,8 +127,6 @@ public class DinosaurEntity extends TameableEntity {
                 danceTickTimer = 0;
             }
         }
-
-        // Play background music randomly in wild areas
         if (!this.getWorld().isClient() && this.age % 1200 == 0 && !this.isTamed()) {
             this.playSound(ModSounds.BACKGROUND_MUSIC, 0.5f, 1.0f);
         }
@@ -145,11 +135,8 @@ public class DinosaurEntity extends TameableEntity {
     @Override
     public void handleStatus(byte status) {
         super.handleStatus(status);
-        if (status == (byte) 7) {
-            spawnTameParticles(true);
-        } else if (status == (byte) 6) {
-            spawnTameParticles(false);
-        }
+        if (status == (byte) 7) spawnTameParticles(true);
+        else if (status == (byte) 6) spawnTameParticles(false);
     }
 
     private void spawnTameParticles(boolean success) {
@@ -173,22 +160,14 @@ public class DinosaurEntity extends TameableEntity {
     }
 
     @Override
-    protected SoundEvent getAmbientSound() {
-        return ModSounds.DINO_AMBIENT;
-    }
+    protected SoundEvent getAmbientSound() { return ModSounds.DINO_AMBIENT; }
 
     @Override
-    protected SoundEvent getHurtSound(DamageSource source) {
-        return ModSounds.DINO_HURT;
-    }
+    protected SoundEvent getHurtSound(DamageSource source) { return ModSounds.DINO_HURT; }
 
     @Override
-    protected SoundEvent getDeathSound() {
-        return ModSounds.DINO_DEATH;
-    }
+    protected SoundEvent getDeathSound() { return ModSounds.DINO_DEATH; }
 
     @Override
-    public boolean canBeLeashedBy(PlayerEntity player) {
-        return this.isTamed();
-    }
+    public boolean canBeLeashedBy(PlayerEntity player) { return this.isTamed(); }
 }
