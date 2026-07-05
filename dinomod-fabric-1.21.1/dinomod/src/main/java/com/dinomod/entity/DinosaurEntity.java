@@ -43,7 +43,6 @@ public class DinosaurEntity extends TameableEntity {
             .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.3);
     }
 
-    // Required by TameableEntity
     @Override
     public PassiveEntity createChild(ServerWorld world, PassiveEntity entity) {
         return null;
@@ -168,6 +167,5 @@ public class DinosaurEntity extends TameableEntity {
     @Override
     protected SoundEvent getDeathSound() { return ModSounds.DINO_DEATH; }
 
-    @Override
     public boolean canBeLeashedBy(PlayerEntity player) { return this.isTamed(); }
 }
