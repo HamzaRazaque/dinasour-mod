@@ -195,7 +195,6 @@ public class DinosaurEntity extends TameableEntity {
         return null;
     }
 
-    @Override
     public boolean canBeControlledByRider() {
         return this.getControllingPassenger() != null;
     }
