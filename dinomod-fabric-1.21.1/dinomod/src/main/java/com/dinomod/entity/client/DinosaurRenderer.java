@@ -27,7 +27,7 @@ public class DinosaurRenderer extends MobEntityRenderer<DinosaurEntity, Dinosaur
     public DinosaurRenderer(EntityRendererFactory.Context context) {
         super(context, new DinosaurModel<>(
             DinosaurModel.getTexturedModelData().createModel()
-        ), 1.2f);
+        ), 1.5f);
     }
 
     @Override
@@ -39,9 +39,9 @@ public class DinosaurRenderer extends MobEntityRenderer<DinosaurEntity, Dinosaur
     @Override
     public void render(DinosaurEntity entity, float yaw, float tickDelta,
                        MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light) {
+        matrices.push();
 
         float scale = entity.getCurrentScale();
-        matrices.push();
         matrices.scale(scale, scale, scale);
 
         if (!entity.isBaby()) {
@@ -63,7 +63,9 @@ public class DinosaurRenderer extends MobEntityRenderer<DinosaurEntity, Dinosaur
             if (world.getBlockState(pos).isOf(Blocks.JUKEBOX)) {
                 if (world.getBlockEntity(pos) instanceof JukeboxBlockEntity jukebox) {
                     ItemStack disc = jukebox.getStack(0);
-                    if (!disc.isEmpty() && disc.getItem() == ModItems.DINO_MUSIC_DISC && entity.isTamed()) {
+                    if (!disc.isEmpty()
+                        && disc.getItem() == ModItems.DINO_MUSIC_DISC
+                        && entity.isTamed()) {
                         jukeboxPlaying = true;
                         break;
                     }
