@@ -18,7 +18,7 @@ public class ModEntities {
             Registries.ENTITY_TYPE,
             Identifier.of(DinoMod.MOD_ID, "dinosaur"),
             FabricEntityTypeBuilder.create(SpawnGroup.CREATURE, DinosaurEntity::new)
-                .dimensions(EntityDimensions.fixed(3.0f, 6.0f))
+                .dimensions(EntityDimensions.fixed(1.5f, 2.0f))
                 .build()
         );
     }
