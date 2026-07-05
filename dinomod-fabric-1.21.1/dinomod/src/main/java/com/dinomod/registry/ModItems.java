@@ -7,9 +7,6 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.*;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +17,7 @@ public class ModItems {
 
     public static void register() {
 
+        // Dango — poisons player if eaten
         MOMOTARO_DANGO = Registry.register(
             Registries.ITEM,
             Identifier.of(DinoMod.MOD_ID, "momotaro_dango"),
@@ -38,20 +36,11 @@ public class ModItems {
                 .maxCount(16))
         );
 
-        // Register jukebox song first
-        RegistryKey<net.minecraft.sound.SoundEvent> songKey =
-            RegistryKey.of(RegistryKeys.SOUND_EVENT,
-                Identifier.of(DinoMod.MOD_ID, "dino_disc"));
-
+        // Green music disc — plain item, dancing handled by renderer
         DINO_MUSIC_DISC = Registry.register(
             Registries.ITEM,
             Identifier.of(DinoMod.MOD_ID, "dino_music_disc"),
-            new MusicDiscItem(
-                15,
-                ModSounds.DINO_DISC_MUSIC,
-                new Item.Settings().maxCount(1),
-                180
-            )
+            new Item(new Item.Settings().maxCount(1))
         );
     }
 }
