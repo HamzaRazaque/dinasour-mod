@@ -11,7 +11,6 @@ import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
 public class ModEntities {
-
     public static EntityType<DinosaurEntity> DINOSAUR;
 
     public static void register() {
@@ -19,7 +18,7 @@ public class ModEntities {
             Registries.ENTITY_TYPE,
             Identifier.of(DinoMod.MOD_ID, "dinosaur"),
             FabricEntityTypeBuilder.create(SpawnGroup.CREATURE, DinosaurEntity::new)
-                .dimensions(EntityDimensions.fixed(1.5f, 2.8f))
+                .dimensions(EntityDimensions.fixed(3.0f, 6.0f))
                 .build()
         );
     }
