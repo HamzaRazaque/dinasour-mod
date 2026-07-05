@@ -17,7 +17,14 @@ jobs:
           distribution: 'temurin'
 
       - name: Grant Gradle permission
-        run: chmod +x dinomod-fabric-1.21.1/dinomod/gradlew
+        run: chmod +x gradlew
+
+      - name: Copy Gradle wrapper into mod folder
+        run: |
+          cp gradlew dinomod-fabric-1.21.1/dinomod/gradlew
+          mkdir -p dinomod-fabric-1.21.1/dinomod/gradle/wrapper
+          cp gradle/wrapper/gradle-wrapper.jar dinomod-fabric-1.21.1/dinomod/gradle/wrapper/gradle-wrapper.jar
+          cp gradle/wrapper/gradle-wrapper.properties dinomod-fabric-1.21.1/dinomod/gradle/wrapper/gradle-wrapper.properties
 
       - name: Build
         working-directory: dinomod-fabric-1.21.1/dinomod
