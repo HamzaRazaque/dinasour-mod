@@ -39,8 +39,8 @@ public class ModItems {
                 .maxCount(16))
         );
 
-        // Register the jukebox song key matching our data file
-        RegistryKey<net.minecraft.sound.SoundEvent> songKey =
+        // Use JukeboxSong registry key correctly
+        RegistryKey<net.minecraft.sound.SoundEvent> jukeboxSongKey =
             RegistryKey.of(RegistryKeys.JUKEBOX_SONG,
                 Identifier.of(DinoMod.MOD_ID, "dino_disc"));
 
@@ -51,7 +51,11 @@ public class ModItems {
                 .maxCount(1)
                 .component(
                     DataComponentTypes.JUKEBOX_PLAYABLE,
-                    new JukeboxPlayableComponent(songKey, true)
+                    new JukeboxPlayableComponent(
+                        RegistryKey.of(RegistryKeys.JUKEBOX_SONG,
+                            Identifier.of(DinoMod.MOD_ID, "dino_disc")),
+                        true
+                    )
                 ))
         );
     }
