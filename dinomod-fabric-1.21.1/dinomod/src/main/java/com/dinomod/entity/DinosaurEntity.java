@@ -20,6 +20,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -36,7 +37,6 @@ public class DinosaurEntity extends TameableEntity {
         DataTracker.registerData(DinosaurEntity.class, TrackedDataHandlerRegistry.INTEGER);
 
     private static final int MAX_GROWTH = 5;
-    // Baby = 2-3 blocks, Adult = 10-15 blocks (scale multiplier on top of hitbox)
     private static final float BABY_SCALE = 0.4f;
     private static final float ADULT_SCALE = 2.2f;
 
@@ -86,6 +86,7 @@ public class DinosaurEntity extends TameableEntity {
 
     @Override
     protected void initGoals() {
+        this.goalSelector.add(0, new DinosaurRideableGoal(this));
         this.goalSelector.add(1, new SwimGoal(this));
         this.goalSelector.add(2, new SitGoal(this));
         this.goalSelector.add(3, new MeleeAttackGoal(this, 1.0, true));
@@ -110,7 +111,6 @@ public class DinosaurEntity extends TameableEntity {
         ItemStack heldItem = player.getStackInHand(hand);
 
         if (heldItem.isOf(ModItems.MOMOTARO_DANGO)) {
-            // Tame wild adult
             if (!this.isTamed() && !this.isBaby()) {
                 if (!this.getWorld().isClient()) {
                     if (!player.getAbilities().creativeMode) heldItem.decrement(1);
@@ -129,7 +129,6 @@ public class DinosaurEntity extends TameableEntity {
                 return ActionResult.SUCCESS;
             }
 
-            // Grow baby
             if (this.isBaby() && this.isTamed()) {
                 if (!this.getWorld().isClient()) {
                     if (!player.getAbilities().creativeMode) heldItem.decrement(1);
@@ -166,7 +165,6 @@ public class DinosaurEntity extends TameableEntity {
             }
         }
 
-        // Owner: ride or sit
         if (this.isTamed() && !this.isBaby() && player.getUuid().equals(this.getOwnerUuid())) {
             if (!this.getWorld().isClient()) {
                 if (player.isSneaking()) {
@@ -188,8 +186,6 @@ public class DinosaurEntity extends TameableEntity {
         return super.interactMob(player, hand);
     }
 
-    // ── Riding ───────────────────────────────────────────────────────────────
-
     @Override
     public LivingEntity getControllingPassenger() {
         if (this.getFirstPassenger() instanceof PlayerEntity player) {
@@ -209,7 +205,6 @@ public class DinosaurEntity extends TameableEntity {
         LivingEntity passenger = this.getControllingPassenger();
 
         if (this.isLogicalSideForUpdatingMovement() && passenger instanceof PlayerEntity rider) {
-            // Match dino rotation to rider
             this.setYaw(rider.getYaw());
             this.prevYaw = this.getYaw();
             this.setPitch(rider.getPitch() * 0.5f);
@@ -221,6 +216,12 @@ public class DinosaurEntity extends TameableEntity {
             float strafe = rider.sidewaysSpeed;
             if (forward < 0f) forward *= 0.5f;
 
+            // Jump when rider presses space and dino is on ground
+            if (rider.jumping && this.isOnGround()) {
+                this.setVelocity(this.getVelocity().x, 0.8, this.getVelocity().z);
+                this.playSound(SoundEvents.ENTITY_HORSE_JUMP, 0.6f, 1.0f);
+            }
+
             this.setMovementSpeed(0.35f);
             super.travel(new Vec3d(strafe, movementInput.y, forward));
         } else {
@@ -228,20 +229,47 @@ public class DinosaurEntity extends TameableEntity {
         }
     }
 
+    // Rider sits on dino's back properly
+    @Override
+    public double getMountedHeightOffset() {
+        return this.getHeight() * 0.92;
+    }
+
+    @Override
+    public boolean handleFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource) {
+        if (this.hasPassengers()) return false;
+        return super.handleFallDamage(fallDistance, damageMultiplier, damageSource);
+    }
+
+    @Override
+    public void removeAllPassengers() {
+        for (net.minecraft.entity.Entity passenger : this.getPassengerList()) {
+            if (passenger instanceof PlayerEntity player) {
+                player.fallDistance = 0;
+            }
+        }
+        super.removeAllPassengers();
+    }
+
     @Override
     public boolean isPushable() {
         return !this.hasPassengers();
     }
 
-    // ── Scale / growth ───────────────────────────────────────────────────────
-
     @Override
     public void tick() {
         super.tick();
 
-        // Smooth scale growth on client
         if (this.getWorld().isClient() && isBaby() && currentScale < targetScale) {
             currentScale = Math.min(currentScale + 0.02f, targetScale);
+        }
+
+        if (this.hasPassengers()) {
+            for (net.minecraft.entity.Entity passenger : this.getPassengerList()) {
+                if (passenger instanceof PlayerEntity player) {
+                    player.fallDistance = 0;
+                }
+            }
         }
 
         if (isDancing()) {
