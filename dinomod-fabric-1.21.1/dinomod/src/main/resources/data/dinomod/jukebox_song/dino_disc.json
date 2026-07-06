@@ -1,0 +1,8 @@
+{
+  "sound_event": "dinomod:dino_disc",
+  "description": {
+    "translate": "jukebox_song.dinomod.dino_disc"
+  },
+  "length_in_seconds": 180,
+  "comparator_output": 15
+}
