@@ -43,6 +43,7 @@ public class DinosaurEntity extends TameableEntity {
     private int danceTickTimer = 0;
     private float currentScale = BABY_SCALE;
     private float targetScale = BABY_SCALE;
+    private boolean wasJumping = false;
 
     public DinosaurEntity(EntityType<? extends TameableEntity> entityType, World world) {
         super(entityType, world);
@@ -79,10 +80,7 @@ public class DinosaurEntity extends TameableEntity {
     public void setBaby(boolean baby) { this.dataTracker.set(BABY, baby); }
     public int getGrowth() { return this.dataTracker.get(GROWTH); }
     public void setGrowth(int growth) { this.dataTracker.set(GROWTH, growth); }
-
-    public float getCurrentScale() {
-        return isBaby() ? currentScale : ADULT_SCALE;
-    }
+    public float getCurrentScale() { return isBaby() ? currentScale : ADULT_SCALE; }
 
     @Override
     protected void initGoals() {
@@ -216,10 +214,14 @@ public class DinosaurEntity extends TameableEntity {
             float strafe = rider.sidewaysSpeed;
             if (forward < 0f) forward *= 0.5f;
 
-            // Jump when rider presses space and dino is on ground
-            if (rider.jumping && this.isOnGround()) {
-                this.setVelocity(this.getVelocity().x, 0.8, this.getVelocity().z);
+            // Jump — check via velocity instead of protected field
+            Vec3d vel = this.getVelocity();
+            if (this.isOnGround() && !wasJumping && rider.getJumpingMeasuredVelocity() > 0) {
+                this.setVelocity(vel.x, 0.8, vel.z);
                 this.playSound(SoundEvents.ENTITY_HORSE_JUMP, 0.6f, 1.0f);
+                wasJumping = true;
+            } else if (this.isOnGround()) {
+                wasJumping = false;
             }
 
             this.setMovementSpeed(0.35f);
@@ -229,10 +231,9 @@ public class DinosaurEntity extends TameableEntity {
         }
     }
 
-    // Rider sits on dino's back properly
-    @Override
-    public double getMountedHeightOffset() {
-        return this.getHeight() * 0.92;
+    // Rider sits on dino's back
+    public double getRiderHeight() {
+        return this.getHeight() * 0.9;
     }
 
     @Override
