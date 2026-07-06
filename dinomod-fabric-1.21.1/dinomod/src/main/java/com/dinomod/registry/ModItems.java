@@ -1,16 +1,12 @@
 package com.dinomod.registry;
 
 import com.dinomod.DinoMod;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.FoodComponent;
-import net.minecraft.component.type.JukeboxPlayableComponent;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.*;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
 import java.util.List;
 import java.util.Optional;
@@ -39,24 +35,10 @@ public class ModItems {
                 .maxCount(16))
         );
 
-        // Use JukeboxSong registry key correctly
-        RegistryKey<net.minecraft.sound.SoundEvent> jukeboxSongKey =
-            RegistryKey.of(RegistryKeys.JUKEBOX_SONG,
-                Identifier.of(DinoMod.MOD_ID, "dino_disc"));
-
         DINO_MUSIC_DISC = Registry.register(
             Registries.ITEM,
             Identifier.of(DinoMod.MOD_ID, "dino_music_disc"),
-            new Item(new Item.Settings()
-                .maxCount(1)
-                .component(
-                    DataComponentTypes.JUKEBOX_PLAYABLE,
-                    new JukeboxPlayableComponent(
-                        RegistryKey.of(RegistryKeys.JUKEBOX_SONG,
-                            Identifier.of(DinoMod.MOD_ID, "dino_disc")),
-                        true
-                    )
-                ))
+            new Item(new Item.Settings().maxCount(1))
         );
     }
 }
