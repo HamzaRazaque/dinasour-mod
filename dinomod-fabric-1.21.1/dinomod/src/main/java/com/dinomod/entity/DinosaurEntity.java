@@ -43,7 +43,7 @@ public class DinosaurEntity extends TameableEntity {
     private int danceTickTimer = 0;
     private float currentScale = BABY_SCALE;
     private float targetScale = BABY_SCALE;
-    private boolean wasJumping = false;
+    private boolean riderJumpedLastTick = false;
 
     public DinosaurEntity(EntityType<? extends TameableEntity> entityType, World world) {
         super(entityType, world);
@@ -214,14 +214,15 @@ public class DinosaurEntity extends TameableEntity {
             float strafe = rider.sidewaysSpeed;
             if (forward < 0f) forward *= 0.5f;
 
-            // Jump — check via velocity instead of protected field
+            // Jump — detect by checking rider is above ground recently
             Vec3d vel = this.getVelocity();
-            if (this.isOnGround() && !wasJumping && rider.getJumpingMeasuredVelocity() > 0) {
+            boolean riderJumping = rider.getVelocity().y > 0.1 && rider.isOnGround();
+            if (this.isOnGround() && riderJumping && !riderJumpedLastTick) {
                 this.setVelocity(vel.x, 0.8, vel.z);
                 this.playSound(SoundEvents.ENTITY_HORSE_JUMP, 0.6f, 1.0f);
-                wasJumping = true;
-            } else if (this.isOnGround()) {
-                wasJumping = false;
+                riderJumpedLastTick = true;
+            } else if (this.isOnGround() && !riderJumping) {
+                riderJumpedLastTick = false;
             }
 
             this.setMovementSpeed(0.35f);
@@ -229,11 +230,6 @@ public class DinosaurEntity extends TameableEntity {
         } else {
             super.travel(movementInput);
         }
-    }
-
-    // Rider sits on dino's back
-    public double getRiderHeight() {
-        return this.getHeight() * 0.9;
     }
 
     @Override
